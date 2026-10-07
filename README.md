@@ -7,8 +7,9 @@ On small screens and canvas pages, the garden's standard layout is used.
 The right pane includes a 20px inner buffer in addition to the content gap.
 Install TOC Settings to configure this buffer in the garden plugin menu.
 
-Drag a pane to its minimum width to close it. A small screen-edge button
-reopens it. Collapsed states persist alongside widths when persistence is
+Drag a pane to its minimum width to close it. Keep holding and reverse the
+drag to reopen it immediately. Releasing the drag saves the final state; a
+small screen-edge button reopens a closed pane afterward. Collapsed states persist alongside widths when persistence is
 enabled. On mobile, the garden's regular navigation remains available.
 
 This is a **garden site plugin**, installed through the Digital Garden plugin

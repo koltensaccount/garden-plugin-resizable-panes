@@ -282,15 +282,17 @@
     event.preventDefault();
 
     var els = getEls();
-    var limits = getLimits(hasVisibleBox(els.left), hasVisibleBox(els.right));
+    var side = state.activeDrag;
+    // Reserve room for the dragged pane even while it is temporarily collapsed.
+    var limits = getLimits(side === "left" || hasVisibleBox(els.left), side === "right" || hasVisibleBox(els.right));
     var x = pointX(event);
 
-    var side = state.activeDrag;
     var width = side === "left" ? state.startLeft + x - state.startX : state.startRight - x + state.startX;
-    if (width <= limits.minPane) {
-      state[side + "Closed"] = true;
-      endDrag();
-    } else state[side + "Width"] = clamp(width, limits.minPane, limits.maxPane);
+    state[side + "Closed"] = width <= limits.minPane;
+    if (!state[side + "Closed"]) {
+      state[side + "Width"] = clamp(width, limits.minPane, limits.maxPane);
+      document.body.classList.remove("dg-rp-" + side + "-closed");
+    }
 
     applyLayout();
   }

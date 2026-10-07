@@ -84,13 +84,16 @@ test("disabled runtime leaves the page alone", () => {
   assert.equal(runtime.timers.length, 0);
 });
 
-test("drag to minimum closes a pane, releases dragging and saves reopening state", () => {
+test("releasing at minimum saves the collapsed pane and allows button reopening", () => {
   const runtime = boot();
   runtime.frames.shift()();
   const splitter = runtime.splitters.get("dg-rp-left-splitter");
   splitter.events.mousedown({ type: "mousedown", button: 0, clientX: 260, preventDefault() {} });
   runtime.listeners.mousemove({ clientX: 200, preventDefault() {} });
   assert.equal(runtime.splitters.has("dg-rp-left-splitter"), false);
+  assert.equal(typeof runtime.listeners.mousemove, "function");
+  assert.equal(runtime.stored["dgResizablePanes.leftClosed"], undefined);
+  runtime.listeners.mouseup();
   assert.equal(runtime.stored["dgResizablePanes.leftClosed"], "true");
   assert.equal(runtime.listeners.mousemove, undefined);
   const persisted = boot(true, runtime.stored);
@@ -100,3 +103,23 @@ test("drag to minimum closes a pane, releases dragging and saves reopening state
   assert.equal(persisted.splitters.has("dg-rp-left-splitter"), true);
   assert.equal(persisted.stored["dgResizablePanes.leftClosed"], "false");
 });
+
+for (const side of ["left", "right"]) {
+  test(side + " pane can snap closed and reopen repeatedly during the same drag", () => {
+    const runtime = boot();
+    runtime.frames.shift()();
+    runtime.splitters.get("dg-rp-" + side + "-splitter").events.mousedown({ type: "mousedown", button: 0, clientX: 500, preventDefault() {} });
+    const collapsedX = side === "left" ? 420 : 620;
+    const reopenedX = side === "left" ? 540 : 460;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      runtime.listeners.mousemove({ clientX: collapsedX, preventDefault() {} });
+      assert.equal(runtime.splitters.has("dg-rp-" + side + "-splitter"), false);
+      assert.equal(runtime.stored["dgResizablePanes." + side + "Closed"], undefined);
+      runtime.listeners.mousemove({ clientX: reopenedX, preventDefault() {} });
+      assert.equal(runtime.splitters.has("dg-rp-" + side + "-splitter"), true);
+    }
+    runtime.listeners.mouseup();
+    assert.equal(runtime.stored["dgResizablePanes." + side + "Closed"], "false");
+    assert.equal(runtime.listeners.mousemove, undefined);
+  });
+}
