@@ -58,10 +58,10 @@ body.dg-rp-active #page-panel.sidebar {
 }
 
 body.dg-rp-active .content:not(.canvas-page) {
-  margin-left: calc(var(--dg-rp-left-effective-width) + var(--dg-rp-gap)) !important;
-  margin-right: calc(var(--dg-rp-right-effective-width) + var(--dg-rp-gap)) !important;
-  width: calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - (var(--dg-rp-gap) * 2)) !important;
-  min-width: min(var(--dg-rp-main-min-width), calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - (var(--dg-rp-gap) * 2))) !important;
+  margin-left: calc(var(--dg-rp-left-effective-width) + var(--dg-rp-left-gap)) !important;
+  margin-right: calc(var(--dg-rp-right-effective-width) + var(--dg-rp-right-gap)) !important;
+  width: calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - var(--dg-rp-left-gap) - var(--dg-rp-right-gap)) !important;
+  min-width: min(var(--dg-rp-main-min-width), calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - var(--dg-rp-left-gap) - var(--dg-rp-right-gap))) !important;
   max-width: none !important;
 }
 
@@ -145,6 +145,36 @@ body.dg-rp-dragging .dg-rp-splitter::after {
   right: var(--dg-rp-right-width);
   transform: translateX(50%);
 }
+
+body.dg-rp-active.dg-rp-left-closed .filetree-wrapper,
+body.dg-rp-active.dg-rp-right-closed #page-panel.sidebar {
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+}
+
+.dg-rp-restore {
+  position: fixed;
+  bottom: 20px;
+  width: 28px;
+  height: 28px;
+  padding: 4px !important;
+  border: 1px solid var(--background-modifier-border) !important;
+  border-radius: 4px;
+  background: var(--background-secondary) !important;
+  color: var(--text-muted) !important;
+  box-shadow: none !important;
+  z-index: 12;
+  cursor: pointer;
+}
+.dg-rp-restore-left { left: 8px; }
+.dg-rp-restore-right { right: 8px; }
+.dg-rp-restore .lucide { width: 16px; height: 16px; }
+.dg-rp-restore .lucide + span { display: none; }
+.dg-rp-restore:focus-visible { outline: 2px solid var(--interactive-accent); }
+body:not(.dg-rp-active) .dg-rp-restore { display: none; }
 
 @media (max-width: 1000px) {
   body.dg-rp-active .content:not(.canvas-page) {

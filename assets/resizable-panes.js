@@ -22,6 +22,8 @@
   var MOBILE_BREAKPOINT = 1000;
 
   var state = {
+    leftClosed: readClosed("left"),
+    rightClosed: readClosed("right"),
     leftWidth: readNumber(STORAGE_LEFT, asNumber(config.defaultLeftWidth, 260)),
     rightWidth: readNumber(STORAGE_RIGHT, asNumber(config.defaultRightWidth, 300)),
     activeDrag: null,
@@ -29,6 +31,20 @@
     startLeft: 0,
     startRight: 0
   };
+
+  function readClosed(side) {
+    if (!config.persistWidths) return false;
+    try { return localStorage.getItem("dgResizablePanes." + side + "Closed") === "true"; }
+    catch (_) { return false; }
+  }
+
+  function saveClosed() {
+    if (!config.persistWidths) return;
+    try {
+      localStorage.setItem("dgResizablePanes.leftClosed", String(state.leftClosed));
+      localStorage.setItem("dgResizablePanes.rightClosed", String(state.rightClosed));
+    } catch (_) {}
+  }
 
   function asNumber(value, fallback) {
     var number = Number(value);
@@ -78,7 +94,7 @@
     var paneCount = (leftExists ? 1 : 0) + (rightExists ? 1 : 0);
     var viewportMax = Math.floor(window.innerWidth * maxRatio);
     var spaceBound = paneCount > 0
-      ? Math.floor((window.innerWidth - mainMin - gap * Math.max(1, paneCount)) / paneCount)
+      ? Math.floor((window.innerWidth - mainMin - gap * 2) / paneCount)
       : viewportMax;
 
     return {
@@ -91,12 +107,11 @@
 
   function canUseResizableLayout(leftExists, rightExists, content) {
     if (!content || content.classList.contains("canvas-page")) return false;
-    if (!leftExists && !rightExists) return false;
     if (window.innerWidth < MOBILE_BREAKPOINT) return false;
 
     var limits = getLimits(leftExists, rightExists);
     var paneMinimums = (leftExists ? limits.minPane : 0) + (rightExists ? limits.minPane : 0);
-    var gapSpace = limits.gap * ((leftExists ? 1 : 0) + (rightExists ? 1 : 0));
+    var gapSpace = limits.gap * 2;
     return window.innerWidth >= paneMinimums + limits.mainMin + gapSpace;
   }
 
@@ -113,7 +128,7 @@
 
     var left = leftExists ? state.leftWidth : 0;
     var right = rightExists ? state.rightWidth : 0;
-    var gapSpace = limits.gap * ((leftExists ? 1 : 0) + (rightExists ? 1 : 0));
+    var gapSpace = limits.gap * 2;
     var availableMain = window.innerWidth - left - right - gapSpace;
 
     if (availableMain < limits.mainMin) {
@@ -164,15 +179,44 @@
     });
   }
 
+  function updateRestore(side, visible) {
+    var className = "dg-rp-restore-" + side;
+    var button = document.querySelector("." + className);
+    if (!visible) {
+      if (button) button.remove();
+      return;
+    }
+    if (button) return;
+    button = document.createElement("button");
+    button.type = "button";
+    button.className = "dg-rp-restore " + className;
+    button.title = side === "left" ? "Open navigation pane" : "Open table of contents pane";
+    button.setAttribute("aria-label", button.title);
+    button.innerHTML = '<i data-lucide="panel-' + side + '-open"></i><span aria-hidden="true">' + (side === "left" ? "&rsaquo;" : "&lsaquo;") + '</span>';
+    button.addEventListener("click", function () {
+      state[side + "Closed"] = false;
+      document.body.classList.remove("dg-rp-" + side + "-closed");
+      saveClosed();
+      applyLayout();
+    });
+    document.body.appendChild(button);
+    if (window.lucide) window.lucide.createIcons();
+  }
+
   function applyLayout() {
     var els = getEls();
-    var leftExists = hasVisibleBox(els.left);
-    var rightExists = hasVisibleBox(els.right);
+    var leftExists = !state.leftClosed && hasVisibleBox(els.left);
+    var rightExists = !state.rightClosed && hasVisibleBox(els.right);
+
+    // A collapsed pane has no box, but still belongs to this desktop layout.
+    if (!els.left && !els.right) return;
 
     if (!canUseResizableLayout(leftExists, rightExists, els.content)) {
       endDrag();
       document.body.classList.remove("dg-rp-active");
       removeSplitters();
+      updateRestore("left", false);
+      updateRestore("right", false);
       return;
     }
 
@@ -183,9 +227,15 @@
     document.documentElement.style.setProperty("--dg-rp-left-effective-width", leftExists ? Math.round(state.leftWidth) + "px" : "0px");
     document.documentElement.style.setProperty("--dg-rp-right-effective-width", rightExists ? Math.round(state.rightWidth) + "px" : "0px");
     document.documentElement.style.setProperty("--dg-rp-gap", Math.round(limits.gap) + "px");
+    document.documentElement.style.setProperty("--dg-rp-left-gap", Math.round(limits.gap) + "px");
+    document.documentElement.style.setProperty("--dg-rp-right-gap", Math.round(limits.gap) + "px");
     document.documentElement.style.setProperty("--dg-rp-main-min-width", Math.round(limits.mainMin) + "px");
 
     document.body.classList.add("dg-rp-active");
+    document.body.classList.toggle("dg-rp-left-closed", state.leftClosed);
+    document.body.classList.toggle("dg-rp-right-closed", state.rightClosed);
+    updateRestore("left", !!els.left && state.leftClosed);
+    updateRestore("right", !!els.right && state.rightClosed);
 
     if (leftExists) {
       ensureSplitter("dg-rp-left-splitter", "Resize left navigation pane", "left");
@@ -235,11 +285,12 @@
     var limits = getLimits(hasVisibleBox(els.left), hasVisibleBox(els.right));
     var x = pointX(event);
 
-    if (state.activeDrag === "left") {
-      state.leftWidth = clamp(state.startLeft + (x - state.startX), limits.minPane, limits.maxPane);
-    } else {
-      state.rightWidth = clamp(state.startRight - (x - state.startX), limits.minPane, limits.maxPane);
-    }
+    var side = state.activeDrag;
+    var width = side === "left" ? state.startLeft + x - state.startX : state.startRight - x + state.startX;
+    if (width <= limits.minPane) {
+      state[side + "Closed"] = true;
+      endDrag();
+    } else state[side + "Width"] = clamp(width, limits.minPane, limits.maxPane);
 
     applyLayout();
   }
@@ -252,6 +303,7 @@
 
     writeNumber(STORAGE_LEFT, state.leftWidth);
     writeNumber(STORAGE_RIGHT, state.rightWidth);
+    saveClosed();
 
     window.removeEventListener("mousemove", onDrag);
     window.removeEventListener("mouseup", endDrag);

@@ -1,7 +1,7 @@
 {
   "id": "resizable-panes",
   "name": "Resizable Panes",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Adds draggable splitters for the left navigation pane and right sidebar/TOC on published Digital Garden pages.",
   "author": "Kolten Bendickson",
   "slots": {
