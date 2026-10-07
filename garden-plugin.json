@@ -1,0 +1,70 @@
+{
+  "id": "resizable-panes",
+  "name": "Resizable Panes",
+  "version": "1.0.2",
+  "description": "Adds draggable splitters for the left navigation pane and right sidebar/TOC on published Digital Garden pages.",
+  "author": "Kolten Bendickson",
+  "slots": {
+    "common.footer": "templates/config.njk"
+  },
+  "styles": ["styles/resizable-panes.css"],
+  "scripts": ["assets/resizable-panes.js"],
+  "settings": [
+    {
+      "key": "enabled",
+      "name": "Enable resizable panes",
+      "description": "Turn the resizing behavior on or off without disabling the whole plugin.",
+      "type": "boolean",
+      "default": true
+    },
+    {
+      "key": "defaultLeftWidth",
+      "name": "Default left pane width",
+      "description": "Initial width in pixels for the left navigation pane.",
+      "type": "number",
+      "default": 260
+    },
+    {
+      "key": "defaultRightWidth",
+      "name": "Default right pane width",
+      "description": "Initial width in pixels for the right sidebar/TOC pane.",
+      "type": "number",
+      "default": 300
+    },
+    {
+      "key": "minPaneWidth",
+      "name": "Minimum pane width",
+      "description": "Smallest allowed width in pixels for either side pane.",
+      "type": "number",
+      "default": 200
+    },
+    {
+      "key": "maxViewportPercent",
+      "name": "Maximum pane viewport percent",
+      "description": "Largest allowed width for a side pane as a percentage of the viewport.",
+      "type": "number",
+      "default": 40
+    },
+    {
+      "key": "mainMinWidth",
+      "name": "Minimum content width",
+      "description": "Minimum readable width in pixels reserved for the main note content.",
+      "type": "number",
+      "default": 560
+    },
+    {
+      "key": "paneGap",
+      "name": "Content gap",
+      "description": "Gap in pixels between panes and the main note content.",
+      "type": "number",
+      "default": 24
+    },
+    {
+      "key": "persistWidths",
+      "name": "Remember resized widths",
+      "description": "Store visitor pane widths in localStorage between page loads.",
+      "type": "boolean",
+      "default": true
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "garden-plugin-resizable-panes",
+  "version": "1.0.2",
+  "private": true,
+  "description": "Resizable navigation and TOC panes for Digital Garden",
+  "scripts": {
+    "check": "node --check assets/resizable-panes.js",
+    "test": "node --test tests/*.test.cjs",
+    "install:garden": "node scripts/install.cjs"
+  },
+  "engines": { "node": ">=22" }
+}

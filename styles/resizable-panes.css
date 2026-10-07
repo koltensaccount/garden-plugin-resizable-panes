@@ -1,0 +1,168 @@
+:root {
+  --dg-rp-left-width: 260px;
+  --dg-rp-right-width: 300px;
+  --dg-rp-left-effective-width: var(--dg-rp-left-width);
+  --dg-rp-right-effective-width: var(--dg-rp-right-width);
+  --dg-rp-gap: 24px;
+  --dg-rp-splitter-size: 10px;
+  --dg-rp-main-min-width: 560px;
+}
+
+body.dg-rp-dragging {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.dg-rp-active,
+body.dg-rp-active * {
+  box-sizing: border-box;
+}
+
+body.dg-rp-active {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+body.dg-rp-active .filetree-wrapper {
+  width: var(--dg-rp-left-width) !important;
+  min-width: var(--dg-rp-left-width) !important;
+  max-width: var(--dg-rp-left-width) !important;
+  overflow: hidden !important;
+  display: flex !important;
+  justify-content: stretch !important;
+}
+
+body.dg-rp-active .filetree-sidebar {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  overflow-x: auto !important;
+  overflow-y: auto !important;
+}
+
+body.dg-rp-active #page-panel .sidebar-container {
+  padding-left: var(--dg-toc-buffer, 20px) !important;
+  min-width: 0;
+}
+
+body.dg-rp-active .sidebar#page-panel,
+body.dg-rp-active #page-panel.sidebar {
+  left: auto !important;
+  right: 0 !important;
+  width: var(--dg-rp-right-width) !important;
+  min-width: var(--dg-rp-right-width) !important;
+  max-width: var(--dg-rp-right-width) !important;
+  overflow: hidden !important;
+}
+
+body.dg-rp-active .content:not(.canvas-page) {
+  margin-left: calc(var(--dg-rp-left-effective-width) + var(--dg-rp-gap)) !important;
+  margin-right: calc(var(--dg-rp-right-effective-width) + var(--dg-rp-gap)) !important;
+  width: calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - (var(--dg-rp-gap) * 2)) !important;
+  min-width: min(var(--dg-rp-main-min-width), calc(100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - (var(--dg-rp-gap) * 2))) !important;
+  max-width: none !important;
+}
+
+body.dg-rp-active .content,
+body.dg-rp-active .filetree-sidebar,
+body.dg-rp-active .sidebar-container,
+body.dg-rp-active .toc,
+body.dg-rp-active .toc-container,
+body.dg-rp-active .backlinks,
+body.dg-rp-active .folder,
+body.dg-rp-active .foldername,
+body.dg-rp-active .notelink,
+body.dg-rp-active .filename,
+body.dg-rp-active .gp-tag-name,
+body.dg-rp-active .gp-tag-note {
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  word-break: normal !important;
+  white-space: normal !important;
+}
+
+body.dg-rp-active .content,
+body.dg-rp-active .filetree-sidebar,
+body.dg-rp-active .sidebar-container,
+body.dg-rp-active .toc-container {
+  overflow-x: auto !important;
+}
+
+body.dg-rp-active pre,
+body.dg-rp-active code,
+body.dg-rp-active table,
+body.dg-rp-active mjx-container,
+body.dg-rp-active .math,
+body.dg-rp-active .callout,
+body.dg-rp-active img,
+body.dg-rp-active svg {
+  max-width: 100% !important;
+}
+
+body.dg-rp-active pre,
+body.dg-rp-active table,
+body.dg-rp-active mjx-container[jax="CHTML"] {
+  overflow-x: auto !important;
+}
+
+.dg-rp-splitter {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  width: var(--dg-rp-splitter-size);
+  z-index: 9999;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+}
+
+.dg-rp-splitter::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc((var(--dg-rp-splitter-size) - 2px) / 2);
+  width: 2px;
+  background: var(--text-muted, #888);
+  opacity: 0;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.dg-rp-splitter:hover::after,
+body.dg-rp-dragging .dg-rp-splitter::after {
+  opacity: 0.9;
+  background: var(--interactive-accent, #7c6df2);
+}
+
+.dg-rp-left-splitter {
+  left: var(--dg-rp-left-width);
+  transform: translateX(-50%);
+}
+
+.dg-rp-right-splitter {
+  right: var(--dg-rp-right-width);
+  transform: translateX(50%);
+}
+
+@media (max-width: 1000px) {
+  body.dg-rp-active .content:not(.canvas-page) {
+    margin-left: auto !important;
+    margin-right: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+  }
+
+  body.dg-rp-active .sidebar#page-panel,
+  body.dg-rp-active #page-panel.sidebar,
+  body.dg-rp-active .filetree-wrapper {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+  }
+
+  .dg-rp-splitter {
+    display: none !important;
+  }
+}
