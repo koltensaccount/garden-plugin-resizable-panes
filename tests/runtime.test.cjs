@@ -14,6 +14,7 @@ function boot(enabled = true, stored = {}) {
   const content = { classList: { contains: () => false } };
   const splitters = new Map();
   const body = {
+    style: { setProperty() {} },
     classList: { add() {}, remove() {}, toggle() {} },
     appendChild(el) { splitters.set(el.className.split(" ")[1], el); }
   };
@@ -44,6 +45,7 @@ function boot(enabled = true, stored = {}) {
   };
   vm.runInNewContext(source, {
     document, window,
+    getComputedStyle: () => ({ flexDirection: "row" }),
     requestAnimationFrame: window.requestAnimationFrame,
     localStorage: {
       getItem(key) { return stored[key] || null; },

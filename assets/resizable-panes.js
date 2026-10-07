@@ -16,6 +16,8 @@
   );
 
   if (!config.enabled) return;
+  if (window.dgResizableInitialized) return;
+  window.dgResizableInitialized = true;
 
   var STORAGE_LEFT = "dgResizablePanes.leftWidth";
   var STORAGE_RIGHT = "dgResizablePanes.rightWidth";
@@ -31,6 +33,8 @@
     startLeft: 0,
     startRight: 0
   };
+  var preferred = { leftWidth: state.leftWidth, rightWidth: state.rightWidth };
+  var readingWidth = readNumber("dgResizablePanes.noteWidth", 0);
 
   function readClosed(side) {
     if (!config.persistWidths) return false;
@@ -84,6 +88,9 @@
     if (!el) return false;
     var rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0;
+  }
+  function rightIsDesktop(el) {
+    return !!el && getComputedStyle(el).flexDirection !== "column";
   }
 
   function getLimits(leftExists, rightExists) {
@@ -163,6 +170,22 @@
     splitter.setAttribute("role", "separator");
     splitter.setAttribute("aria-label", label);
     splitter.setAttribute("aria-orientation", "vertical");
+    splitter.tabIndex = 0;
+    splitter.addEventListener("keydown", function (event) {
+      if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+      event.preventDefault();
+      var els = getEls();
+      var limits = getLimits(!state.leftClosed && hasVisibleBox(els.left), !state.rightClosed && rightIsDesktop(els.right));
+      var step = event.shiftKey ? 40 : 10;
+      var delta = (event.key === "ArrowRight" ? 1 : -1) * (side === "left" ? 1 : -1) * step;
+      var width = event.key === "Home" ? limits.minPane : event.key === "End" ? limits.maxPane : state[side + "Width"] + delta;
+      state[side + "Closed"] = width < limits.minPane;
+      if (!state[side + "Closed"]) preferred[side + "Width"] = clamp(width, limits.minPane, limits.maxPane);
+      writeNumber(side === "left" ? STORAGE_LEFT : STORAGE_RIGHT, preferred[side + "Width"]);
+      saveClosed();
+      applyLayout();
+      if (state[side + "Closed"]) document.querySelector(".dg-rp-restore-" + side).focus();
+    });
     splitter.addEventListener("mousedown", function (event) {
       beginDrag(event, side);
     });
@@ -204,12 +227,18 @@
   }
 
   function applyLayout() {
+    if (!state.activeDrag) {
+      state.leftWidth = preferred.leftWidth;
+      state.rightWidth = preferred.rightWidth;
+    }
     var els = getEls();
     var leftExists = !state.leftClosed && hasVisibleBox(els.left);
-    var rightExists = !state.rightClosed && hasVisibleBox(els.right);
+    var rightExists = !state.rightClosed && rightIsDesktop(els.right) && hasVisibleBox(els.right);
 
     // A collapsed pane has no box, but still belongs to this desktop layout.
-    if (!els.left && !els.right) return;
+    document.body.classList.toggle("dg-rp-width-selected", readingWidth > 0);
+    document.body.style.setProperty("--dg-rp-note-width", readingWidth > 0 ? readingWidth + "px" : "none");
+    document.body.classList.toggle("dg-rp-right-managed", rightIsDesktop(els.right));
 
     if (!canUseResizableLayout(leftExists, rightExists, els.content)) {
       endDrag();
@@ -221,6 +250,8 @@
     }
 
     var limits = enforceBounds(leftExists, rightExists);
+    var available = window.innerWidth - (leftExists ? state.leftWidth : 0) - (rightExists ? state.rightWidth : 0) - limits.gap * 2;
+    document.documentElement.style.setProperty("--dg-rp-content-width", Math.round(Math.min(readingWidth || available, available)) + "px");
 
     document.documentElement.style.setProperty("--dg-rp-left-width", Math.round(state.leftWidth) + "px");
     document.documentElement.style.setProperty("--dg-rp-right-width", Math.round(state.rightWidth) + "px");
@@ -235,7 +266,7 @@
     document.body.classList.toggle("dg-rp-left-closed", state.leftClosed);
     document.body.classList.toggle("dg-rp-right-closed", state.rightClosed);
     updateRestore("left", !!els.left && state.leftClosed);
-    updateRestore("right", !!els.right && state.rightClosed);
+    updateRestore("right", rightIsDesktop(els.right) && state.rightClosed);
 
     if (leftExists) {
       ensureSplitter("dg-rp-left-splitter", "Resize left navigation pane", "left");
@@ -250,6 +281,14 @@
       var rightSplitter = document.querySelector(".dg-rp-right-splitter");
       if (rightSplitter) rightSplitter.remove();
     }
+    ["left", "right"].forEach(function (side) {
+      var handle = document.querySelector(".dg-rp-" + side + "-splitter");
+      if (!handle) return;
+      handle.setAttribute("aria-valuemin", String(limits.minPane));
+      handle.setAttribute("aria-valuemax", String(limits.maxPane));
+      handle.setAttribute("aria-valuenow", String(Math.round(state[side + "Width"])));
+      handle.setAttribute("aria-valuetext", Math.round(state[side + "Width"]) + " pixels");
+    });
   }
 
   function pointX(event) {
@@ -284,7 +323,7 @@
     var els = getEls();
     var side = state.activeDrag;
     // Reserve room for the dragged pane even while it is temporarily collapsed.
-    var limits = getLimits(side === "left" || hasVisibleBox(els.left), side === "right" || hasVisibleBox(els.right));
+    var limits = getLimits(side === "left" || hasVisibleBox(els.left), rightIsDesktop(els.right) && (side === "right" || hasVisibleBox(els.right)));
     var x = pointX(event);
 
     var width = side === "left" ? state.startLeft + x - state.startX : state.startRight - x + state.startX;
@@ -299,12 +338,13 @@
 
   function endDrag() {
     if (!state.activeDrag) return;
-
+    var side = state.activeDrag;
+    if (!state[side + "Closed"]) preferred[side + "Width"] = state[side + "Width"];
     state.activeDrag = null;
     document.body.classList.remove("dg-rp-dragging");
 
-    writeNumber(STORAGE_LEFT, state.leftWidth);
-    writeNumber(STORAGE_RIGHT, state.rightWidth);
+    writeNumber(STORAGE_LEFT, preferred.leftWidth);
+    writeNumber(STORAGE_RIGHT, preferred.rightWidth);
     saveClosed();
 
     window.removeEventListener("mousemove", onDrag);
@@ -316,6 +356,33 @@
   }
 
   function boot() {
+    var pageContent = getEls().content;
+    if (!pageContent || pageContent.classList.contains("canvas-page")) return;
+    if (window.DGNavTools) {
+      var button = document.createElement("button");
+      button.type = "button";
+      button.title = "Reading width";
+      button.setAttribute("aria-label", "Reading width");
+      button.innerHTML = '<i data-lucide="move-horizontal"></i><span aria-hidden="true">&harr;</span>';
+      window.DGNavTools.mount("dg-reading-width-control", button);
+      var dialog = document.createElement("dialog");
+      dialog.className = "dg-rp-width-dialog";
+      dialog.setAttribute("aria-label", "Reading width");
+      dialog.innerHTML = '<form method="dialog"><label for="dg-reading-width">Reading width</label><div><input id="dg-reading-width" type="range" min="480" max="1440" step="20"><output></output></div><footer><button type="button" class="dg-rp-width-reset">Full width</button><button type="submit">Done</button></footer></form>';
+      document.body.appendChild(dialog);
+      var slider = dialog.querySelector("input");
+      var output = dialog.querySelector("output");
+      function showWidth() { slider.value = String(readingWidth || 1440); output.textContent = readingWidth ? readingWidth + " px" : "Full"; }
+      function saveWidth() {
+        if (config.persistWidths) try { localStorage.setItem("dgResizablePanes.noteWidth", String(readingWidth)); } catch (_) {}
+        applyLayout();
+        document.dispatchEvent(new CustomEvent("dg:layout-change"));
+      }
+      button.addEventListener("click", function () { showWidth(); if (!dialog.open) dialog.showModal(); });
+      slider.addEventListener("input", function () { readingWidth = Number(slider.value); showWidth(); saveWidth(); });
+      dialog.querySelector(".dg-rp-width-reset").addEventListener("click", function () { readingWidth = 0; showWidth(); saveWidth(); });
+      if (window.lucide) window.lucide.createIcons();
+    }
     var queued = false;
     function scheduleApply() {
       if (queued) return;

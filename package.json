@@ -4,9 +4,20 @@
   "private": true,
   "description": "Resizable navigation and TOC panes for Digital Garden",
   "scripts": {
-    "check": "node --check assets/resizable-panes.js",
+    "check": "node scripts/check.cjs",
     "test": "node --test tests/*.test.cjs",
     "install:garden": "node scripts/install.cjs"
   },
-  "engines": { "node": ">=22" }
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "playwright-core": "1.63.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/koltensaccount/garden-plugin-resizable-panes.git"
+  },
+  "homepage": "https://github.com/koltensaccount/garden-plugin-resizable-panes#readme"
 }
