@@ -5,7 +5,7 @@ const vm = require("node:vm");
 const path = require("node:path");
 const source = fs.readFileSync(path.join(__dirname, "../assets/resizable-panes.js"), "utf8");
 
-function boot(enabled = true, stored = {}) {
+function boot(enabled = true, stored = {}, width = 1440) {
   const observed = [];
   const frames = [];
   const timers = [];
@@ -13,21 +13,23 @@ function boot(enabled = true, stored = {}) {
   const pane = { getBoundingClientRect: () => ({ width: 250, height: 800 }) };
   const content = { classList: { contains: () => false } };
   const splitters = new Map();
+  const classes = new Set();
+  const variables = new Map();
   const body = {
     style: { setProperty() {} },
-    classList: { add() {}, remove() {}, toggle() {} },
+    classList: { add(...names) { names.forEach(name=>classes.add(name)); }, remove(...names) { names.forEach(name=>classes.delete(name)); }, toggle(name, force) { if(force)classes.add(name);else classes.delete(name); } },
     appendChild(el) { splitters.set(el.className.split(" ")[1], el); }
   };
   const document = {
     body,
     readyState: "complete",
-    documentElement: { style: { setProperty() {} } },
+    documentElement: { style: { setProperty(key,value) { variables.set(key,value); } } },
     querySelector(selector) {
       if (selector === ".filetree-wrapper" || selector.includes("#page-panel")) return pane;
       if (selector.includes("main.content")) return content;
       return splitters.get(selector.slice(1)) || null;
     },
-    querySelectorAll: () => [],
+    querySelectorAll: selector => selector === '.dg-rp-splitter' ? [...splitters.values()].filter(el=>el.className.startsWith('dg-rp-splitter ')) : [],
     createElement: () => ({
       events: {},
       setAttribute() {},
@@ -37,7 +39,7 @@ function boot(enabled = true, stored = {}) {
   };
   const window = {
     DG_RESIZABLE_PANES: { enabled },
-    innerWidth: 1440,
+    innerWidth: width,
     addEventListener(name, fn) { listeners[name] = fn; },
     removeEventListener(name) { delete listeners[name]; },
     requestAnimationFrame(fn) { frames.push(fn); },
@@ -56,8 +58,25 @@ function boot(enabled = true, stored = {}) {
       observe(target, options) { observed.push({ target, options, callback: this.callback }); }
     }
   });
-  return { observed, frames, timers, listeners, body, splitters, stored };
+  return { observed, frames, timers, listeners, body, splitters, stored, window, classes, variables };
 }
+
+test('core sheet boundary disables custom geometry even when computed flex direction is row', () => {
+  const runtime=boot(true,{},1401);runtime.frames.shift()();
+  assert(runtime.classes.has('dg-rp-active'));
+  assert(runtime.splitters.has('dg-rp-right-splitter'));
+  for(const width of [1400,1200,1001,1000,390]){
+    runtime.window.innerWidth=width;runtime.listeners.resize();runtime.frames.shift()();
+    assert(!runtime.classes.has('dg-rp-active'));
+    assert(!runtime.classes.has('dg-rp-right-managed'));
+    assert.equal(runtime.splitters.size,0);
+    assert.equal(runtime.variables.get('--dg-rp-right-effective-width'),'0px');
+    assert.equal(runtime.variables.get('--dg-rp-right-gap'),'0px');
+  }
+  runtime.window.innerWidth=1401;runtime.listeners.resize();runtime.frames.shift()();
+  assert(runtime.classes.has('dg-rp-active'));
+  assert(runtime.splitters.has('dg-rp-right-splitter'));
+});
 
 test("layout never observes its own mutations and visibility updates are batched", () => {
   const runtime = boot();

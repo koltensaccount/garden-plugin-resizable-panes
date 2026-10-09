@@ -1,10 +1,20 @@
 # Validation
 
-Validated on 2026-10-07, Node 22.23.3 and Microsoft Edge 153 (Playwright).
+Version 1.1.2 validated on 2026-10-08, Node 22.23.3 and Google Chrome 154 (Playwright).
 
 ## Standalone
 
-`npm ci`, `npm run check`, `npm test`: 6 tests passed, none skipped. Tests include real Chromium interactions on focused fixtures, syntax/manifest checks and any existing Node unit coverage. Native printing is stubbed; no OS print dialog opens.
+`npm ci`, `npm run check`, `npm test`: 7 tests passed, none skipped. Existing mouse snap/reopen, keyboard controls, reading-width persistence, responsive and initialization tests are retained.
+
+## Page-panel regression
+
+The existing browser harness now covers an actual PDF iframe with backlinks and no TOC at 1600, 1401, 1400, 1200, 1001, 1000 and 390 px. Other focused cases cover ordinary Markdown/backlinks without TOC, PDF/TOC/backlinks, TOC only, graph/backlinks and no page panel. Desktop assertions measure main/panel/PDF rectangles, the intended gap, every backlink text fragment and sidebar scroll width; containment is not accepted merely because overflow is clipped. Minimum/maximum right widths, long unbroken links, collapse/reopen across the sheet boundary, and reading width enabled/reset are exercised. Nested `.content` remains at its own 73 px width.
+
+Tests pass with the committed focused upstream-contract fixture and with the complete compiled `digital-garden-base.scss` from current upstream commit `80a33ffa6cb198ecf733e5944b4a60510970e3b0` substituted using `DG_UPSTREAM_CSS`. A further run loads unchanged TOC Settings 1.1.0 using `DG_TOC_SETTINGS_DIR`: no-TOC pages retain native zero left padding; TOC pages retain that plugin's configured 36 px desktop buffer; core sheet padding remains 20 px. Closed/open sheet widths, positioning, visibility and transforms are checked after native transitions. No upstream or TOC Settings source was changed; no broad plugin matrix was rerun.
+
+The same new regressions fail against released v1.1.1: nested `.content` becomes 992 px instead of 73 px, and custom geometry incorrectly stays active at the core sheet boundary.
+
+Measured desktop PDF/backlinks geometry: at 1600 px, main/PDF right edge is 1276 px and panel left edge is 1300 px; at 1401 px, those edges are 1077 px and 1101 px. Both preserve the configured 24 px gap, with zero sidebar horizontal overflow. An optional native-PDF screenshot capture timed out locally and was not used as evidence; the successful runs assert iframe and text geometry, not the PDF viewer's internal rendering. PDF rendering/width rules were not changed.
 
 ## Previous upstream integration
 

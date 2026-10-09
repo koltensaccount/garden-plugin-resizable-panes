@@ -21,7 +21,8 @@
 
   var STORAGE_LEFT = "dgResizablePanes.leftWidth";
   var STORAGE_RIGHT = "dgResizablePanes.rightWidth";
-  var MOBILE_BREAKPOINT = 1000;
+  // Core owns responsive geometry once its page panel becomes a bottom sheet.
+  var PAGE_PANEL_SHEET_BREAKPOINT = 1400;
 
   var state = {
     leftClosed: readClosed("left"),
@@ -80,7 +81,7 @@
     return {
       left: document.querySelector(".filetree-wrapper"),
       right: document.querySelector("#page-panel.sidebar, .sidebar#page-panel"),
-      content: document.querySelector("main.content, .content")
+      content: document.querySelector("main.content")
     };
   }
 
@@ -90,7 +91,7 @@
     return rect.width > 0 && rect.height > 0;
   }
   function rightIsDesktop(el) {
-    return !!el && getComputedStyle(el).flexDirection !== "column";
+    return window.innerWidth > PAGE_PANEL_SHEET_BREAKPOINT && !!el && getComputedStyle(el).flexDirection !== "column";
   }
 
   function getLimits(leftExists, rightExists) {
@@ -114,7 +115,7 @@
 
   function canUseResizableLayout(leftExists, rightExists, content) {
     if (!content || content.classList.contains("canvas-page")) return false;
-    if (window.innerWidth < MOBILE_BREAKPOINT) return false;
+    if (window.innerWidth <= PAGE_PANEL_SHEET_BREAKPOINT) return false;
 
     var limits = getLimits(leftExists, rightExists);
     var paneMinimums = (leftExists ? limits.minPane : 0) + (rightExists ? limits.minPane : 0);
@@ -213,7 +214,7 @@
     button = document.createElement("button");
     button.type = "button";
     button.className = "dg-rp-restore " + className;
-    button.title = side === "left" ? "Open navigation pane" : "Open table of contents pane";
+    button.title = side === "left" ? "Open navigation pane" : "Open page panel";
     button.setAttribute("aria-label", button.title);
     button.innerHTML = '<i data-lucide="panel-' + side + '-open"></i><span aria-hidden="true">' + (side === "left" ? "&rsaquo;" : "&lsaquo;") + '</span>';
     button.addEventListener("click", function () {
@@ -242,7 +243,9 @@
 
     if (!canUseResizableLayout(leftExists, rightExists, els.content)) {
       endDrag();
-      document.body.classList.remove("dg-rp-active");
+      document.body.classList.remove("dg-rp-active", "dg-rp-right-managed", "dg-rp-left-closed", "dg-rp-right-closed");
+      document.documentElement.style.setProperty("--dg-rp-right-effective-width", "0px");
+      document.documentElement.style.setProperty("--dg-rp-right-gap", "0px");
       removeSplitters();
       updateRestore("left", false);
       updateRestore("right", false);

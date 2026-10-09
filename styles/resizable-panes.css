@@ -13,8 +13,9 @@ body.dg-rp-dragging {
   user-select: none !important;
 }
 
+@media (min-width: 1401px) {
 body.dg-rp-active,
-body.dg-rp-active :is(main.content, .filetree-wrapper, .filetree-sidebar, #page-panel) {
+body.dg-rp-active :is(main.content, .filetree-wrapper, .filetree-sidebar) {
   box-sizing: border-box;
 }
 
@@ -42,9 +43,26 @@ body.dg-rp-active .filetree-sidebar {
   overflow-y: auto !important;
 }
 
-body.dg-rp-active #page-panel .sidebar-container {
-  padding-left: var(--dg-toc-buffer, 20px) !important;
+body.dg-rp-active.dg-rp-right-managed #page-panel .sidebar-container {
+  box-sizing: border-box;
+  width: 100%;
   min-width: 0;
+  max-width: 100%;
+}
+
+body.dg-rp-active.dg-rp-right-managed #page-panel .sidebar-container > *,
+body.dg-rp-active.dg-rp-right-managed #page-panel :is(.toc, .toc-container, .backlinks, .backlink-list, .backlink-card) {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+
+body.dg-rp-active.dg-rp-right-managed #page-panel .backlink-card > :is(a, span) {
+  min-width: 0;
+}
+
+body.dg-rp-active.dg-rp-right-managed #page-panel .graph #link-graph {
+  max-width: 100%;
 }
 
 body.dg-rp-active.dg-rp-right-managed .sidebar#page-panel,
@@ -54,10 +72,10 @@ body.dg-rp-active.dg-rp-right-managed #page-panel.sidebar {
   width: var(--dg-rp-right-width) !important;
   min-width: var(--dg-rp-right-width) !important;
   max-width: var(--dg-rp-right-width) !important;
-  overflow: hidden !important;
+  box-sizing: border-box;
 }
 
-body.dg-rp-active .content:not(.canvas-page) {
+body.dg-rp-active main.content:not(.canvas-page) {
   margin-left: calc(var(--dg-rp-left-effective-width) + var(--dg-rp-left-gap) + max(0px, (100vw - var(--dg-rp-left-effective-width) - var(--dg-rp-right-effective-width) - var(--dg-rp-left-gap) - var(--dg-rp-right-gap) - var(--dg-rp-content-width)) / 2)) !important;
   margin-right: auto !important;
   width: var(--dg-rp-content-width) !important;
@@ -65,12 +83,12 @@ body.dg-rp-active .content:not(.canvas-page) {
   max-width: none !important;
 }
 
-body.dg-rp-active .content,
+body.dg-rp-active main.content,
 body.dg-rp-active .filetree-sidebar,
-body.dg-rp-active .sidebar-container,
-body.dg-rp-active .toc,
-body.dg-rp-active .toc-container,
-body.dg-rp-active .backlinks,
+body.dg-rp-active.dg-rp-right-managed #page-panel .sidebar-container,
+body.dg-rp-active.dg-rp-right-managed #page-panel .toc,
+body.dg-rp-active.dg-rp-right-managed #page-panel .toc-container,
+body.dg-rp-active.dg-rp-right-managed #page-panel .backlinks,
 body.dg-rp-active .folder,
 body.dg-rp-active .foldername,
 body.dg-rp-active .notelink,
@@ -83,28 +101,29 @@ body.dg-rp-active .gp-tag-note {
   white-space: normal !important;
 }
 
-body.dg-rp-active .content,
+body.dg-rp-active main.content,
 body.dg-rp-active .filetree-sidebar,
-body.dg-rp-active .sidebar-container,
-body.dg-rp-active .toc-container {
+body.dg-rp-active.dg-rp-right-managed #page-panel .sidebar-container,
+body.dg-rp-active.dg-rp-right-managed #page-panel .toc-container {
   overflow-x: auto !important;
 }
 
-body.dg-rp-active pre,
-body.dg-rp-active code,
-body.dg-rp-active table,
-body.dg-rp-active mjx-container,
-body.dg-rp-active .math,
-body.dg-rp-active .callout,
-body.dg-rp-active img,
-body.dg-rp-active svg {
+body.dg-rp-active main.content pre,
+body.dg-rp-active main.content code,
+body.dg-rp-active main.content table,
+body.dg-rp-active main.content mjx-container,
+body.dg-rp-active main.content .math,
+body.dg-rp-active main.content .callout,
+body.dg-rp-active main.content img,
+body.dg-rp-active main.content svg {
   max-width: 100% !important;
 }
 
-body.dg-rp-active pre,
-body.dg-rp-active table,
-body.dg-rp-active mjx-container[jax="CHTML"] {
+body.dg-rp-active main.content pre,
+body.dg-rp-active main.content table,
+body.dg-rp-active main.content mjx-container[jax="CHTML"] {
   overflow-x: auto !important;
+}
 }
 
 .dg-rp-splitter {
@@ -146,6 +165,7 @@ body.dg-rp-dragging .dg-rp-splitter::after {
   transform: translateX(50%);
 }
 
+@media (min-width: 1401px) {
 body.dg-rp-active.dg-rp-left-closed .filetree-wrapper,
 body.dg-rp-active.dg-rp-right-managed.dg-rp-right-closed #page-panel.sidebar {
   visibility: hidden !important;
@@ -153,6 +173,7 @@ body.dg-rp-active.dg-rp-right-managed.dg-rp-right-closed #page-panel.sidebar {
   width: 0 !important;
   min-width: 0 !important;
   max-width: 0 !important;
+}
 }
 .dg-rp-splitter:focus-visible::after { opacity: 1; background: var(--interactive-accent); }
 body.dg-rp-width-selected:not(.dg-rp-active) main.content:not(.canvas-page) { max-width: min(var(--dg-rp-note-width), calc(100% - 32px)); }
@@ -186,22 +207,7 @@ body.dg-rp-active.dg-rp-left-closed .dg-nav-tools-fallback { left: 48px; }
 .dg-rp-restore:focus-visible { outline: 2px solid var(--interactive-accent); }
 body:not(.dg-rp-active) .dg-rp-restore { display: none; }
 
-@media (max-width: 1000px) {
-  body.dg-rp-active .content:not(.canvas-page) {
-    margin-left: auto !important;
-    margin-right: auto !important;
-    width: auto !important;
-    min-width: 0 !important;
-  }
-
-  body.dg-rp-active .sidebar#page-panel,
-  body.dg-rp-active #page-panel.sidebar,
-  body.dg-rp-active .filetree-wrapper {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-  }
-
+@media (max-width: 1400px) {
   .dg-rp-splitter {
     display: none !important;
   }

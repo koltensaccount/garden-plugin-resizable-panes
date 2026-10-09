@@ -1,0 +1,28 @@
+/* Focused current Digital Garden contract: 80a33ffa6cb198ecf733e5944b4a60510970e3b0.
+   DG_UPSTREAM_CSS can substitute the complete compiled upstream stylesheet. */
+body { --dg-content-max-width:700px; --dg-filetree-min-width:250px; --dg-filetree-gap:80px; --dg-sidebar-gap:80px; --dg-sidebar-max-width:350px; --dg-graph-width:250px; margin:0; font:18px/1.5 Arial; }
+.content { max-width:var(--dg-content-max-width); margin-left:max(calc(var(--dg-filetree-min-width) + var(--dg-filetree-gap)), min(calc((100vw - var(--dg-content-max-width))/2), calc(100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 20px))); margin-right:auto; }
+.filetree-wrapper { position:fixed; left:0; top:0; width:250px; height:100vh; }
+.filetree-sidebar { width:100%; }
+.sidebar { position:fixed!important; top:75px; left:calc(max(calc(var(--dg-filetree-min-width) + var(--dg-filetree-gap)), min(calc((100vw - var(--dg-content-max-width))/2), calc(100vw - var(--dg-content-max-width) - var(--dg-sidebar-max-width) - var(--dg-sidebar-gap) - 20px))) + var(--dg-content-max-width) + var(--dg-sidebar-gap)); height:100%; min-width:25px; max-width:350px; display:flex; }
+.sidebar-container { padding-right:20px; width:100%; overflow-y:auto; display:flex; flex-direction:column; height:87%; }
+.backlinks { flex:1; margin-top:10px; padding-left:5px; }
+.backlink-title { margin:0 0 10px; font-size:0.9rem; }
+.backlink-list { max-height:250px; overflow-y:auto; overflow-x:hidden; }
+.backlink-card { padding:6px 0; width:100%; font-size:0.85rem; display:flex; align-items:center; }
+.no-backlinks-message { font-size:0.8rem; font-style:italic; }
+.toc { padding:5px; }
+.toc-container { max-height:70vh; overflow-y:auto; }
+.sidebar .graph, .sidebar .graph #link-graph { width:var(--dg-graph-width); }
+.page-panel-backdrop { visibility:hidden; }
+@media(max-width:1400px) {
+  .sidebar { left:0!important; right:0!important; top:auto!important; bottom:0; margin:0; padding:0; width:100%; max-width:none; min-width:0; height:auto; max-height:85dvh; flex-direction:column; transform:translateY(100%); visibility:hidden; }
+  .sidebar.is-open { transform:none; visibility:visible; }
+  .sidebar-container { gap:24px; height:auto; overflow-y:auto; padding:8px 20px 24px; }
+  .backlinks { order:-1; max-width:none; margin-top:0; padding-left:0; }
+  .toc, .toc-container, .backlink-list { max-height:none; }
+  .sidebar .graph, .sidebar .graph #link-graph { width:100%; }
+  body.page-panel-open .page-panel-backdrop { visibility:visible; }
+}
+@media(min-width:760px) and (max-width:1400px) { .sidebar { max-width:720px; margin:0 auto; } }
+@media(max-width:1000px) { .filetree-wrapper { display:none; } main.content { margin:20px; max-width:calc(100% - 40px); } }
