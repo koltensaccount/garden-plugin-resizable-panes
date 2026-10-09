@@ -399,6 +399,8 @@
     scheduleApply();
     window.addEventListener("resize", scheduleApply, { passive: true });
     window.addEventListener("load", scheduleApply, { once: true });
+    // Unlock changes ancestor CSS visibility, not the observed pane attributes.
+    document.addEventListener("dg:note-unlocked", scheduleApply);
 
     // Observe only pane visibility. Watching body would observe our own writes.
     var observer = new MutationObserver(scheduleApply);

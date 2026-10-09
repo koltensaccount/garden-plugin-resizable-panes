@@ -10,6 +10,7 @@ function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
   const frames = [];
   const timers = [];
   const listeners = {};
+  const documentListeners = {};
   const pane = { getBoundingClientRect: () => ({ width: 250, height: paneMode.height === undefined ? 800 : paneMode.height }) };
   const content = { classList: { contains: () => false } };
   const splitters = new Map();
@@ -21,6 +22,7 @@ function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
     appendChild(el) { splitters.set(el.className.split(" ")[1], el); }
   };
   const document = {
+    addEventListener(name, callback) { documentListeners[name] = callback; },
     body,
     readyState: "complete",
     documentElement: { style: { setProperty(key,value) { variables.set(key,value); } } },
@@ -47,7 +49,7 @@ function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
   };
   vm.runInNewContext(source, {
     document, window,
-    getComputedStyle: () => ({ flexDirection: paneMode.direction || "row", display: "flex" }),
+    getComputedStyle: () => ({ flexDirection: paneMode.direction || "row", display: paneMode.display || "flex" }),
     requestAnimationFrame: window.requestAnimationFrame,
     localStorage: {
       getItem(key) { return stored[key] || null; },
@@ -58,8 +60,28 @@ function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
       observe(target, options) { observed.push({ target, options, callback: this.callback }); }
     }
   });
-  return { observed, frames, timers, listeners, body, splitters, stored, window, classes, variables };
+  return { observed, frames, timers, listeners, documentListeners, body, splitters, stored, window, classes, variables };
 }
+
+test('late password unlock reallocates the revealed panel without resize or pane mutations', () => {
+  const mode={height:0,display:'none'};
+  const runtime=boot(true,{},1600,mode);
+  runtime.frames.shift()();
+  runtime.timers.forEach(fn=>fn());
+  while(runtime.frames.length)runtime.frames.shift()();
+  assert.equal(runtime.variables.get('--dg-rp-right-effective-width'),'0px');
+  mode.height=800;mode.display='flex';
+  assert.equal(typeof runtime.documentListeners['dg:note-unlocked'],'function');
+  runtime.documentListeners['dg:note-unlocked']();
+  runtime.documentListeners['dg:note-unlocked']();
+  assert.equal(runtime.frames.length,1,'Unlock updates are batched');
+  runtime.frames.shift()();
+  assert.equal(runtime.variables.get('--dg-rp-right-effective-width'),'300px');
+  assert(runtime.splitters.has('dg-rp-right-splitter'));
+  const mainRight=parseFloat(runtime.variables.get('--dg-rp-left-effective-width'))+parseFloat(runtime.variables.get('--dg-rp-gap'))+parseFloat(runtime.variables.get('--dg-rp-content-width'));
+  const panelLeft=1600-parseFloat(runtime.variables.get('--dg-rp-right-effective-width'));
+  assert(mainRight<=panelLeft-24,'Revealed panel has its own space');
+});
 
 test('desktop panel allocation does not depend on positive height or horizontal flex direction', () => {
   const runtime=boot(true,{},1600,{height:0,direction:'column'});

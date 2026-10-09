@@ -1,5 +1,9 @@
 # Validation
 
+## Version 1.1.4 Unlock Handoff
+
+2026-10-09: a focused regression reproduces a panel hidden by Note Lock until after every startup timer has completed. Released 1.1.3 has no `dg:note-unlocked` listener and fails this test. The fix listens to Note Lock's existing document event and batches layout recalculation on the next animation frame, without observing body/root writes. The test verifies right width changes from 0 to 300 px, the splitter returns, and the computed main edge leaves the configured 24 px gap, without a resize or pane-attribute mutation. Runtime tests and syntax/manifest checks pass. User visual confirmation is pending; Note Lock and core were not changed.
+
 ## Version 1.1.3 Follow-up
 
 The user's live screenshot still overlapped after 1.1.2; the earlier fixture did not establish that the live bug was fixed. Desktop allocation now uses panel presence/display and the 1400px boundary, not measured positive height or flex direction. A focused unit regression covers a zero-height, column-flex desktop panel with visible overflowing children. Runtime tests and syntax/manifest checks were run; visual confirmation on the user's page is pending. No PDF, core or TOC Settings changes.
