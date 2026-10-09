@@ -91,7 +91,7 @@
     return rect.width > 0 && rect.height > 0;
   }
   function rightIsDesktop(el) {
-    return window.innerWidth > PAGE_PANEL_SHEET_BREAKPOINT && !!el && getComputedStyle(el).flexDirection !== "column";
+    return window.innerWidth > PAGE_PANEL_SHEET_BREAKPOINT && !!el && !el.hidden && getComputedStyle(el).display !== "none";
   }
 
   function getLimits(leftExists, rightExists) {
@@ -234,7 +234,7 @@
     }
     var els = getEls();
     var leftExists = !state.leftClosed && hasVisibleBox(els.left);
-    var rightExists = !state.rightClosed && rightIsDesktop(els.right) && hasVisibleBox(els.right);
+    var rightExists = !state.rightClosed && rightIsDesktop(els.right);
 
     // A collapsed pane has no box, but still belongs to this desktop layout.
     document.body.classList.toggle("dg-rp-width-selected", readingWidth > 0);

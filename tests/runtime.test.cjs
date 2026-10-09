@@ -5,12 +5,12 @@ const vm = require("node:vm");
 const path = require("node:path");
 const source = fs.readFileSync(path.join(__dirname, "../assets/resizable-panes.js"), "utf8");
 
-function boot(enabled = true, stored = {}, width = 1440) {
+function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
   const observed = [];
   const frames = [];
   const timers = [];
   const listeners = {};
-  const pane = { getBoundingClientRect: () => ({ width: 250, height: 800 }) };
+  const pane = { getBoundingClientRect: () => ({ width: 250, height: paneMode.height === undefined ? 800 : paneMode.height }) };
   const content = { classList: { contains: () => false } };
   const splitters = new Map();
   const classes = new Set();
@@ -47,7 +47,7 @@ function boot(enabled = true, stored = {}, width = 1440) {
   };
   vm.runInNewContext(source, {
     document, window,
-    getComputedStyle: () => ({ flexDirection: "row" }),
+    getComputedStyle: () => ({ flexDirection: paneMode.direction || "row", display: "flex" }),
     requestAnimationFrame: window.requestAnimationFrame,
     localStorage: {
       getItem(key) { return stored[key] || null; },
@@ -60,6 +60,14 @@ function boot(enabled = true, stored = {}, width = 1440) {
   });
   return { observed, frames, timers, listeners, body, splitters, stored, window, classes, variables };
 }
+
+test('desktop panel allocation does not depend on positive height or horizontal flex direction', () => {
+  const runtime=boot(true,{},1600,{height:0,direction:'column'});
+  runtime.frames.shift()();
+  assert(runtime.classes.has('dg-rp-right-managed'));
+  assert(runtime.splitters.has('dg-rp-right-splitter'));
+  assert.equal(runtime.variables.get('--dg-rp-right-effective-width'),'300px');
+});
 
 test('core sheet boundary disables custom geometry even when computed flex direction is row', () => {
   const runtime=boot(true,{},1401);runtime.frames.shift()();

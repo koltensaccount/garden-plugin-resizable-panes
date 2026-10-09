@@ -1,5 +1,9 @@
 # Validation
 
+## Version 1.1.3 Follow-up
+
+The user's live screenshot still overlapped after 1.1.2; the earlier fixture did not establish that the live bug was fixed. Desktop allocation now uses panel presence/display and the 1400px boundary, not measured positive height or flex direction. A focused unit regression covers a zero-height, column-flex desktop panel with visible overflowing children. Runtime tests and syntax/manifest checks were run; visual confirmation on the user's page is pending. No PDF, core or TOC Settings changes.
+
 Version 1.1.2 validated on 2026-10-08, Node 22.23.3 and Google Chrome 154 (Playwright).
 
 ## Standalone
