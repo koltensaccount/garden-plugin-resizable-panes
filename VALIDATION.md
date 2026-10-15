@@ -1,5 +1,11 @@
 # Validation
 
+## Version 1.1.5 Compact Navigation Clearance
+
+2026-10-14: `npm run check` and `npm test` pass (10 tests, none skipped) with Node 26.5.0 and installed Chrome. A focused compact fixture combines centered theme content with a padded fixed navigation sidebar. Browser assertions check note clearance from the sidebar's actual edge and viewport containment at 1400, 1200 and 1001 px, plus desktop/mobile transitions at 1600, 1401, 1000 and 390 px. Existing native sheet open/close, PDF/backlink containment, keyboard resizing, reading-width persistence and reversible collapse checks remain passing. Runtime tests cover compact width clamping and leaving compact mode; the existing delayed password-unlock handoff remains passing.
+
+The same focused browser suite passed with TOC Settings (Wide spacing) and with current public runtime scripts/styles for all seven plugins loaded together on public/unlocked note fixtures (default peer settings). No uncaught page errors occurred. The 1200 px compact screenshots were inspected. This is fixture-level compatibility evidence, not a new actual-garden build or exhaustive settings/theme matrix. Protected-note password entry/remembered unlock, live user-site visual confirmation, Firefox/WebKit and native printing were not rerun for this patch. Digital Garden core and the other plugin repos were not modified.
+
 ## Version 1.1.4 Unlock Handoff
 
 2026-10-09: a focused regression reproduces a panel hidden by Note Lock until after every startup timer has completed. Released 1.1.3 has no `dg:note-unlocked` listener and fails this test. The fix listens to Note Lock's existing document event and batches layout recalculation on the next animation frame, without observing body/root writes. The test verifies right width changes from 0 to 300 px, the splitter returns, and the computed main edge leaves the configured 24 px gap, without a resize or pane-attribute mutation. Runtime tests and syntax/manifest checks pass. User visual confirmation is pending; Note Lock and core were not changed.

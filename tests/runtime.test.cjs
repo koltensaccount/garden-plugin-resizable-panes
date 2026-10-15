@@ -11,7 +11,7 @@ function boot(enabled = true, stored = {}, width = 1440, paneMode = {}) {
   const timers = [];
   const listeners = {};
   const documentListeners = {};
-  const pane = { getBoundingClientRect: () => ({ width: 250, height: paneMode.height === undefined ? 800 : paneMode.height }) };
+  const pane = { querySelector:()=>null, getBoundingClientRect: () => ({ right:250, width: 250, height: paneMode.height === undefined ? 800 : paneMode.height }) };
   const content = { classList: { contains: () => false } };
   const splitters = new Map();
   const classes = new Set();
@@ -126,6 +126,19 @@ test("layout never observes its own mutations and visibility updates are batched
   assert.equal(runtime.frames.length, 1);
   runtime.frames.shift()();
   assert.equal(runtime.frames.length, 0);
+});
+
+test('compact layout reserves visible navigation and clamps saved reading width', () => {
+  const runtime=boot(true,{'dgResizablePanes.noteWidth':'1200'},1200);
+  runtime.frames.shift()();
+  assert(runtime.classes.has('dg-rp-compact'));
+  assert.equal(runtime.variables.get('--dg-rp-compact-left'),'274px');
+  assert.equal(runtime.variables.get('--dg-rp-compact-width'),'906px');
+  runtime.window.innerWidth=1000;runtime.listeners.resize();runtime.frames.shift()();
+  assert(!runtime.classes.has('dg-rp-compact'),'Mobile navigation remains core-owned');
+  runtime.window.innerWidth=1600;runtime.listeners.resize();runtime.frames.shift()();
+  assert(!runtime.classes.has('dg-rp-compact'));
+  assert(runtime.classes.has('dg-rp-active'));
 });
 
 test("disabled runtime leaves the page alone", () => {

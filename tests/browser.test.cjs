@@ -8,6 +8,7 @@ const root = path.resolve(__dirname, "..");
 const manifest = JSON.parse(fs.readFileSync(path.join(root, "garden-plugin.json")));
 const chrome = process.env.CHROME_PATH || ["/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge", "/usr/bin/google-chrome", "/usr/bin/chromium", "/usr/bin/chromium-browser"].find(file => fs.existsSync(file));
 const configNames = { "resizable-panes": "DG_RESIZABLE_PANES", "toc-settings": "DG_TOC_SETTINGS", "reading-progress": "DG_READING_PROGRESS", "theme-toggle": "DG_THEME_TOGGLE", "clean-print": "DG_CLEAN_PRINT" };
+const peers = (process.env.DG_PEER_DIRS || '').split(path.delimiter).filter(Boolean).map(dir=>({dir,manifest:JSON.parse(fs.readFileSync(path.join(dir,'garden-plugin.json')))}));
 
 function fixture(url) {
   const query = new URL(url, "http://localhost").searchParams;
@@ -30,6 +31,7 @@ function fixture(url) {
 }
 
 function pagePanelFixture(kind) {
+  const peerAssets=peers.map(({manifest:m},i)=>`${(m.styles||[]).map(f=>`<link rel="stylesheet" href="/peers/${i}/${f}">`).join('')}${configNames[m.id]?`<script>window.${configNames[m.id]}={};</script>`:''}${(m.scripts||[]).map(f=>`<script defer src="/peers/${i}/${f}"></script>`).join('')}`).join('');
   const peer = process.env.DG_TOC_SETTINGS_DIR ? '<link rel="stylesheet" href="/peer-toc/styles/toc-settings.css"><script>window.DG_TOC_SETTINGS={noteSpacing:"Wide"};</script><script defer src="/peer-toc/assets/toc-settings.js"></script>' : '';
   const toc = ['pdf-toc', 'toc-only'].includes(kind) ? '<div class="toc"><div class="toc-container"><nav><ol><li><a href="#section">Section</a></li></ol></nav></div></div>' : '';
   const backlinks = kind !== 'toc-only' ? '<div class="backlinks"><div class="backlink-title">Pages mentioning this page</div><div class="backlink-list"><div class="backlink-card"><span class="no-backlinks-message">No other pages mentions this page</span></div></div></div>' : '';
@@ -40,9 +42,10 @@ function pagePanelFixture(kind) {
     <link rel="stylesheet" href="/styles/_core.fixture.css"><style>
     body{--background-primary:#fff;--background-secondary:#eee;--text-normal:#111;--text-muted:#555;--background-modifier-border:#ccc;--dg-toc-buffer:80px}
     .pdf-embed{width:100%;height:450px;border:0}#embedded-content{width:73px;margin:5px;padding:0}
+    ${kind==='compact'?'@media(min-width:1001px) and (max-width:1400px){main.content{width:700px;margin-left:auto;margin-right:auto}.filetree-wrapper{width:300px}.filetree-sidebar{box-sizing:content-box;width:300px;padding:30px}}':''}
     .page-panel-toggle{display:none;position:fixed;bottom:10px;right:50px}@media(max-width:1400px){.page-panel-toggle{display:block}}
     </style>${manifest.styles.map(f=>`<link rel="stylesheet" href="/${f}">`).join('')}
-    <script>window.DG_RESIZABLE_PANES={};</script>${manifest.scripts.map(f=>`<script defer src="/${f}"></script>`).join('')}${peer}
+    <script>window.DG_RESIZABLE_PANES={};</script>${manifest.scripts.map(f=>`<script defer src="/${f}"></script>`).join('')}${peer}${peerAssets}
     </head><body><div class="filetree-wrapper"><nav class="filetree-sidebar">Garden</nav></div>
     <main class="content">${content}<div class="content" id="embedded-content">Nested content</div></main>${panel}
     <script>
@@ -58,7 +61,11 @@ test("browser feature, keyboard, repeat initialization and responsive safety", {
   assert(chrome, "Install Chrome/Edge or set CHROME_PATH");
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, "http://localhost");
-    if (url.pathname.startsWith('/peer-toc/') && process.env.DG_TOC_SETTINGS_DIR) {
+    if (url.pathname.startsWith('/peers/')) {
+      const [, , index, ...parts]=url.pathname.split('/');
+      const file=path.join(peers[Number(index)].dir,...parts);
+      res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':'text/css');res.end(fs.readFileSync(file));
+    } else if (url.pathname.startsWith('/peer-toc/') && process.env.DG_TOC_SETTINGS_DIR) {
       const file=path.join(process.env.DG_TOC_SETTINGS_DIR,url.pathname.slice('/peer-toc/'.length));
       res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':'text/css');res.end(fs.readFileSync(file));
     } else if (url.pathname === '/styles/_core.fixture.css') {
@@ -117,6 +124,7 @@ test("browser feature, keyboard, repeat initialization and responsive safety", {
       await page.locator('.dg-rp-width-dialog button[type="submit"]').click();
       assert((await page.locator("main.content").boundingBox()).width <= 641);
       await page.reload();
+      await page.waitForFunction(()=>document.body.classList.contains('dg-rp-active'));
       assert((await page.locator("main.content").boundingBox()).width <= 641);
     } else if (id === "toc-settings") {
       const branch = page.locator(".dg-toc-branch").first();
@@ -182,7 +190,7 @@ test("browser feature, keyboard, repeat initialization and responsive safety", {
         });
         assert.equal(geometry.nested,'73px','Nested .content must not inherit main geometry');
         if(geometry.panel){
-          assert(geometry.main.right <= geometry.panel.left-geometry.gap+1,'Main ends before managed panel gap');
+          assert(geometry.main.right <= geometry.panel.left-geometry.gap+1,'Main ends before managed panel gap: '+JSON.stringify(geometry));
           assert(geometry.container.left>=geometry.panel.left-1 && geometry.container.right<=geometry.panel.right+1,'Sidebar container fits selected pane');
           assert(geometry.overflow<=1,'No clipping or horizontal overflow disguises bad containment');
           for(const rect of geometry.text)assert(rect.left>=geometry.panel.left-1&&rect.right<=geometry.panel.right+1,'Backlink text stays in its allocated pane');
@@ -190,15 +198,16 @@ test("browser feature, keyboard, repeat initialization and responsive safety", {
         if(geometry.pdf)assert(geometry.pdf.left>=geometry.main.left-1&&geometry.pdf.right<=geometry.main.right+1,'PDF stays inside main, not under panel');
         return geometry;
       }
-      for (const kind of ['pdf-backlinks','markdown-backlinks','pdf-toc','toc-only','graph-backlinks','no-panel']) {
+      for (const kind of ['compact','pdf-backlinks','markdown-backlinks','pdf-toc','toc-only','graph-backlinks','no-panel']) {
         await page.setViewportSize({width:1600,height:900});
         await page.goto(base+'/?panelCase='+kind);
         await page.waitForFunction(()=>document.body.classList.contains('dg-rp-active'));
         assert.equal(await page.locator('.toc-container').count(),['pdf-toc','toc-only'].includes(kind)?1:0);
-        if(kind!=='no-panel')assert.equal(await page.locator('.sidebar-container').evaluate(el=>getComputedStyle(el).paddingLeft),process.env.DG_TOC_SETTINGS_DIR&&['pdf-toc','toc-only'].includes(kind)?'36px':'0px','Only TOC Settings owns desktop TOC buffer');
-        const widths=kind==='pdf-backlinks'?[1600,1401,1400,1200,1001,1000,390]:[1600,1200];
+        if(kind!=='no-panel')assert.equal(await page.locator('.sidebar-container').evaluate(el=>getComputedStyle(el).paddingLeft),['pdf-toc','toc-only'].includes(kind)?process.env.DG_TOC_SETTINGS_DIR?'36px':peers.some(p=>p.manifest.id==='toc-settings')?'20px':'0px':'0px','Only TOC Settings owns desktop TOC buffer');
+        const widths=['compact','pdf-backlinks'].includes(kind)?[1600,1401,1400,1200,1001,1000,390]:[1600,1200];
         for(const width of widths){
           await page.setViewportSize({width,height:900});await page.waitForTimeout(width<=1400?300:80);
+          await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
           if(width>1400){
             const geometry=await checkPanelGeometry();
             if(process.env.DG_REPORT_LAYOUT&&kind==='pdf-backlinks'){
@@ -207,6 +216,12 @@ test("browser feature, keyboard, repeat initialization and responsive safety", {
             assert.equal(await page.locator('.dg-rp-right-splitter').count(),kind==='no-panel'?0:1);
           }
           else{
+            if(width>1000){
+              const rects=await page.evaluate(()=>{const m=document.querySelector('main.content').getBoundingClientRect(),n=document.querySelector('.filetree-sidebar').getBoundingClientRect();return {left:m.left,right:m.right,navRight:n.right};});
+              assert(rects.left>=rects.navRight+19,'Compact note clears the visible file browser');
+              assert(rects.right<=width,'Compact note fits remaining viewport');
+              if(kind==='compact'&&width===1200&&process.env.DG_CAPTURE)await page.screenshot({path:process.env.DG_CAPTURE});
+            }
             assert.equal(await page.locator('.dg-rp-splitter').count(),0);
             assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('dg-rp-active')),false);
             assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--dg-rp-right-effective-width').trim()),'0px');

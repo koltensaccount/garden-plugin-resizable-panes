@@ -23,6 +23,9 @@
   var STORAGE_RIGHT = "dgResizablePanes.rightWidth";
   // Core owns responsive geometry once its page panel becomes a bottom sheet.
   var PAGE_PANEL_SHEET_BREAKPOINT = 1400;
+  function sheetLayout() {
+    return window.matchMedia ? window.matchMedia("(max-width: 1400px)").matches : window.innerWidth <= PAGE_PANEL_SHEET_BREAKPOINT;
+  }
 
   var state = {
     leftClosed: readClosed("left"),
@@ -91,7 +94,7 @@
     return rect.width > 0 && rect.height > 0;
   }
   function rightIsDesktop(el) {
-    return window.innerWidth > PAGE_PANEL_SHEET_BREAKPOINT && !!el && !el.hidden && getComputedStyle(el).display !== "none";
+    return !sheetLayout() && !!el && !el.hidden && getComputedStyle(el).display !== "none";
   }
 
   function getLimits(leftExists, rightExists) {
@@ -115,7 +118,7 @@
 
   function canUseResizableLayout(leftExists, rightExists, content) {
     if (!content || content.classList.contains("canvas-page")) return false;
-    if (window.innerWidth <= PAGE_PANEL_SHEET_BREAKPOINT) return false;
+    if (sheetLayout()) return false;
 
     var limits = getLimits(leftExists, rightExists);
     var paneMinimums = (leftExists ? limits.minPane : 0) + (rightExists ? limits.minPane : 0);
@@ -235,6 +238,7 @@
     var els = getEls();
     var leftExists = !state.leftClosed && hasVisibleBox(els.left);
     var rightExists = !state.rightClosed && rightIsDesktop(els.right);
+    document.body.classList.remove("dg-rp-compact");
 
     // A collapsed pane has no box, but still belongs to this desktop layout.
     document.body.classList.toggle("dg-rp-width-selected", readingWidth > 0);
@@ -249,6 +253,17 @@
       removeSplitters();
       updateRestore("left", false);
       updateRestore("right", false);
+      // The TOC is a native sheet here, but navigation still occupies the left.
+      if ((window.matchMedia ? window.matchMedia("(min-width: 1001px) and (max-width: 1400px)").matches : window.innerWidth > 1000 && sheetLayout()) && els.content && !els.content.classList.contains("canvas-page") && hasVisibleBox(els.left) && getComputedStyle(els.left).visibility !== "hidden") {
+        var edge = els.left.getBoundingClientRect().right;
+        var sidebar = els.left.querySelector(".filetree-sidebar");
+        if (sidebar) edge = Math.max(edge, sidebar.getBoundingClientRect().right);
+        var gap = asNumber(config.paneGap, 24);
+        var room = Math.max(0, window.innerWidth - edge - gap - 20);
+        document.documentElement.style.setProperty("--dg-rp-compact-left", edge + gap + "px");
+        document.documentElement.style.setProperty("--dg-rp-compact-width", Math.min(readingWidth || room, room) + "px");
+        document.body.classList.add("dg-rp-compact");
+      }
       return;
     }
 
@@ -411,6 +426,12 @@
         attributeFilter: ["class", "style", "hidden"]
       });
     });
+    if (window.ResizeObserver && els.left) {
+      var navigationSizeObserver = new ResizeObserver(scheduleApply);
+      navigationSizeObserver.observe(els.left);
+      var sidebar = els.left.querySelector(".filetree-sidebar");
+      if (sidebar) navigationSizeObserver.observe(sidebar);
+    }
     [50, 150, 350, 800, 1500].forEach(function (delay) {
       window.setTimeout(scheduleApply, delay);
     });

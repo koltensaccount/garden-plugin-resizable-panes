@@ -177,6 +177,17 @@ body.dg-rp-active.dg-rp-right-managed.dg-rp-right-closed #page-panel.sidebar {
 }
 .dg-rp-splitter:focus-visible::after { opacity: 1; background: var(--interactive-accent); }
 body.dg-rp-width-selected:not(.dg-rp-active) main.content:not(.canvas-page) { max-width: min(var(--dg-rp-note-width), calc(100% - 32px)); }
+@media screen and (min-width: 1001px) and (max-width: 1400px) {
+  body.dg-rp-compact main.content:not(.canvas-page) {
+    box-sizing: border-box;
+    margin-left: calc(var(--dg-rp-compact-left) + max(0px, (100% - var(--dg-rp-compact-left) - 20px - var(--dg-rp-compact-width)) / 2)) !important;
+    margin-right: 20px !important;
+    width: var(--dg-rp-compact-width) !important;
+    min-width: 0 !important;
+    max-width: var(--dg-rp-compact-width) !important;
+    overflow-wrap: break-word;
+  }
+}
 .dg-rp-width-dialog { width: min(360px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px; border-radius: 6px; border: 1px solid var(--background-modifier-border); background: var(--background-primary); color: var(--text-normal); }
 .dg-rp-width-dialog label { display: block; margin-bottom: 14px; }
 .dg-rp-width-dialog form > div { display: flex; align-items: center; gap: 12px; }
